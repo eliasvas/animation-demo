@@ -1470,7 +1470,7 @@ INLINE Quaternion normalize_quat(Quaternion l)
 {
     Quaternion res;
 
-    f32 len = sqrt(dot_quat(l,l)) ;
+    f32 len = sqrtf(dot_quat(l,l)) ;
     res = div_quatf(l,len);
 
     return res;

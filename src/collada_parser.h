@@ -521,8 +521,9 @@ read_collada_maya(String filepath)
          }
     }
 
+    for (int i = 0; i< 44; ++i)
+        int a = i;
 
-   data.root = *root;
 
    return data;
 }
@@ -580,24 +581,14 @@ read_collada_animation(String filepath) {
 
 
 
+   rewind(file);
    //go until the start of the first animation
    while (TRUE)
    {
        i32 res = fscanf(file, "%s", line);
-       if (res == EOF)return anim;// we reached the end of the file
- 
-       //count number of joint animations
-       if (strcmp(line, "<library_animations>") == 0)
-       {
-           //<animation id="ABC" name="ABC" <--skeleton data not needed?
-           fscanf(file, "%s %s %s", garbage, garbage, garbage);
-           while (res != EOF){
-               res = fscanf(file, "%s", line);
-               if (strcmp(line, "<animation") == 0)
-                   number_of_joint_animations++;
-           }
-           break;
-      }
+       if (res == EOF)break;// we reached the end of the file
+       if (strcmp(line, "<animation>") == 0)
+           number_of_joint_animations++;
    }
    anim.joint_animations = (JointAnimation*)arena_alloc(&global_platform.permanent_storage, sizeof(JointAnimation) * number_of_joint_animations);
    anim.joint_anims_count = number_of_joint_animations;
@@ -614,12 +605,7 @@ read_collada_animation(String filepath) {
        i32 res = fscanf(file, "%s", line);
        if (res == EOF)
            return anim;
-       if (strcmp(line, "<library_animations>") == 0)
-       {
-          //<animation id="ABC" name="ABC" <--skeleton data not needed?
-          fscanf(file, "%s %s %s", garbage, garbage, garbage);
-          break;
-       }
+       if (strcmp(line, "<library_animations>") == 0)break;
    }
 
 
@@ -634,26 +620,43 @@ read_collada_animation(String filepath) {
            return anim;
        if (strcmp(line, "<animation") == 0)
        {
-           fscanf(file, "%s %s %s %s %s %s",garbage, garbage,garbage, garbage, garbage, garbage);
+           //fscanf(file, "%s %s %s %s %s %s",garbage, garbage,garbage, garbage, garbage, garbage);
+           fscanf(file, "%s %s", garbage, garbage);
            for (i32 i = joints_count-1; i >=0; --i) //bigbrain Bone Bone_01 .... Bone gets popped first..
            {
+               //check against joint sid's for the joint animations index!!
                if (strstr(garbage, joint_names[i].data) != NULL)
                {
                    joint_index = i;
                    break;
                }
-                   
            }
-           fscanf(file, "%s", count);
-           anim.joint_animations[current_joint_animation].keyframe_count = get_num_from_string(count);
-           keyframe_count = anim.joint_animations[current_joint_animation].keyframe_count;
-           anim.joint_animations[current_joint_animation].keyframes = (JointKeyFrame*)arena_alloc(&global_platform.permanent_storage,sizeof(JointKeyFrame) * keyframe_count);
-           for (u32 i = 0; i < keyframe_count; ++i)
+           //eat <animation>
+           res = fscanf(file, "%s", garbage);
+           //read the timestamps
+           while (TRUE)
            {
-                fscanf(file, " %f", &anim.joint_animations[current_joint_animation].keyframes[i].timestamp);
+               res = fscanf(file, "%s", line);
+               if (res == EOF)
+                   return anim;
+               if (strcmp(line, "<float_array") == 0)
+               {
+                   fscanf(file, "%s", garbage);
+                   fscanf(file, "%s", count);
+                   anim.joint_animations[current_joint_animation].keyframe_count = get_num_from_string(count);
+                   keyframe_count = anim.joint_animations[current_joint_animation].keyframe_count;
+                   anim.joint_animations[current_joint_animation].keyframes = (JointKeyFrame*)arena_alloc(&global_platform.permanent_storage,sizeof(JointKeyFrame) * keyframe_count);
+                    
+                   for (u32 i = 0; i < keyframe_count; ++i)
+                   {
+                       fscanf(file, " %f", &anim.joint_animations[current_joint_animation].keyframes[i].timestamp);
+                   }
+                   break;
+               }
+                
            }
            mat4 mat;
-           //now lets read the matrices for each timestamp
+           //now lets read the transforms (trans + rot) for each timestamp
            while (TRUE)
            {
                res = fscanf(file, "%s", line);
@@ -664,12 +667,10 @@ read_collada_animation(String filepath) {
                    {
                        fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &mat.raw[0],&mat.raw[1],&mat.raw[2],&mat.raw[3],&mat.raw[4],&mat.raw[5],&mat.raw[6],&mat.raw[7],&mat.raw[8],&mat.raw[9],&mat.raw[10],&mat.raw[11],&mat.raw[12],&mat.raw[13],&mat.raw[14],&mat.raw[15]);
                        mat = transpose_mat4(mat);
-                       //mat = blender_to_opengl_mat4(mat);
-                       //JointTransform t = {v3(mat.elements[3][0],mat.elements[3][1],mat.elements[3][2]), mat4_to_quat(mat)};
                        JointTransform t = {v3(mat.elements[3][0],mat.elements[3][1],mat.elements[3][2]), mat4_to_quat(mat)};
                        anim.joint_animations[current_joint_animation].keyframes[i].transform = t;
                        anim.joint_animations[current_joint_animation].keyframes[i].joint_index = joint_index;
-                       anim.length = maximum(anim.joint_animations[current_joint_animation].keyframes[keyframe_count - 1].timestamp,anim.length);
+                       anim.length = anim.joint_animations[current_joint_animation].keyframes[keyframe_count - 1].timestamp;
                    }
                    break;
                }

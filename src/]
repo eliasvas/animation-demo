@@ -175,35 +175,36 @@ concat_local_transforms(Joint *joints, mat4 *local_transforms, u32 index)
     return mul_mat4(local_transforms[index],concat_local_transforms(joints, local_transforms, joints[index].parent_id)); 
 }
 
-static mat4
-concat_local_rotations(Joint *joints, mat4 *local_transforms, u32 index)
-{
-    if (index == 0)
-        return local_transforms[0];
-    Quaternion qrotation = mat4_to_quat(local_transforms[index]);
-    mat4 rotation = quat_to_mat4(qrotation);
-    return mul_mat4(rotation,concat_local_rotations(joints, local_transforms, joints[index].parent_id)); 
-}
-
 
 static mat4
 concat_local_translations(Joint *joints, mat4 *local_transforms, u32 index)
 {
     if (index == 0)
         return local_transforms[0];
-    mat4 translation = translate_mat4(v3(local_transforms[index].elements[3][1], local_transforms[index].elements[3][1], local_transforms[index].elements[3][1]));
-    return mul_mat4(translation,concat_local_translations(joints, local_transforms, joints[index].parent_id)); 
+    mat4 translation = translate_mat4(local_transforms[index].elements[3][1], local_transforms[index].elements[3][1], local_transforms[index].elements[3][1]);
+    return mul_mat4(local_transforms[index],concat_local_translations(joints, local_transforms, joints[index].parent_id)); 
 }
 
 static void
 calc_animated_transform(Animator *animator, Joint *joints, mat4 *local_transforms, u32 index)
 {
     //here we get the animated joint transform meaning the world pos of the joint in the animation
-    mat4 animated_joint_transform = concat_local_transforms(joints, local_transforms, index); 
-    //mat4 animated_joint_transform = local_transforms[index]; 
+    mat4 animated_joint_translation = concat_local_translations(joints, local_transforms, index); 
+    mat4 animated_joint_rotation= concat_local_rotations(joints, local_transforms, index); 
+    mat4 aniimated_joint_transform = mul_mat4(animated_joint_translation, animated_joint_rotation);
     //here we multiply by inv bind transform to get the world pos relative to the original bone transforms
     joints[index].animated_transform = mul_mat4(animated_joint_transform, joints[index].inv_bind_transform);
 }
+/*
+static void
+calc_animated_transform(Animator *animator, Joint *joints, mat4 *local_transforms, u32 index)
+{
+    //here we get the animated joint transform meaning the world pos of the joint in the animation
+    mat4 animated_joint_transform = concat_local_transforms(joints, local_transforms, index); 
+    //here we multiply by inv bind transform to get the world pos relative to the original bone transforms
+    joints[index].animated_transform = mul_mat4(animated_joint_transform, joints[index].inv_bind_transform);
+}
+*/
 
 static u32 
 count_joints(Joint* j)
@@ -303,7 +304,6 @@ update_animator(Animator* animator)
         u32 animation_index = current_pose.joint_index;
         mat4 local_animated_transform = mul_mat4(translate_mat4(current_pose.transform.position), quat_to_mat4(current_pose.transform.rotation));
         //mat4 local_animated_transform = translate_mat4(current_pose.transform.position);
-        //mat4 local_animated_transform = translate_mat4(current_pose.transform.position);
         local_animated_transforms[animation_index] = local_animated_transform;
     }
 
@@ -394,7 +394,7 @@ render_animated_model(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
     setInt(s, "diffuse_map", 1); //we should really make the texture manager global or something(per Scene?)... sigh
     //for(i32 i = 0; i < model->joint_count; ++i)
     //to start things off, everything is identity!
-#if 1
+#if 0
     {
         mat4 identity = m4d(1.f);
         setMat4fv(s, "joint_transforms[0]", (GLfloat*)identity.elements);
@@ -418,9 +418,11 @@ render_animated_model(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
         }
     }
 #endif
+    //for (int i = 0; i < 44; ++i)
+        //model->joints[i].animated_transform = model->joints[i].inv_bind_transform;
 
-    //for (u32 i = 0; i < 44; ++i)
-        //set_joint_transform_uniforms(model,s, &model->joints[i]);
+    for (int i = 0; i < 44; ++i)
+        set_joint_transform_uniforms(model,s, &model->joints[i]);
     setMat4fv(s, "view_matrix", (GLfloat*)view.elements);
     glUniform3f(glGetUniformLocation(s->ID, "light_direction"), 0.43,0.34,0.f); 
     //glUniform3f(glGetUniformLocation(s->ID, "light_direction"), 1.f,0.0f,0.0f); 
