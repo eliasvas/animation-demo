@@ -188,8 +188,8 @@ static void
 increase_animation_time(Animator* anim)
 {
     anim->animation_time += global_platform.dt; //this should be the Δt from global platform but its bugged rn
-    //if (anim->animation_time > anim->anim->length)
-        //anim->animation_time -= anim->anim->length;
+    if (anim->animation_time > anim->anim->length)
+        anim->animation_time -= anim->anim->length;
 }
 
 //mat4 animated_joint_transform = concat_local_transforms(joints, local_transforms, index); 
@@ -246,12 +246,12 @@ get_previous_and_next_keyframes(Animator* animator, i32 joint_animation_index)
     f32 animation_time = animator->animation_time;
     //if (animation_time > next.timestamp)
     i32 integral = 1;
-    animation_time = fmod(animation_time,animator->anim->joint_animations[joint_animation_index].length);
-    animation_time = modf(animation_time, &integral); 
+    //animation_time = fmod(animation_time,animator->anim->joint_animations[joint_animation_index].length);
+    //animation_time = modf(animation_time, &integral); 
     for (i32 i = 1; i < animator->anim->joint_animations[joint_animation_index].keyframe_count; ++i)
     {
         next = all_frames[i];
-        if (next.timestamp > animation_time)
+        if (next.timestamp > animator->animation_time)
             break;
         prev = all_frames[i];
     }
