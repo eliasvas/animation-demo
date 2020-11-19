@@ -1,4 +1,4 @@
- #include "platform.h"
+#include "platform.h"
 #include "tools.h"
 #include "quad.h" 
 #include "camera.h"
@@ -7,7 +7,7 @@
 #include "entity.h"
 #include "text.h"
 #include "collada_parser.h"
-#include "animation.h"
+//#include "animation.h"
 #include "skybox.h"
 /*          TODO 
  *  -Figure out what kind of game I wanna make!!!!
@@ -61,13 +61,14 @@ init(void)
     {
         //BLYYEHEHEHEH delete dis shiet luuul
         Texture *anim_tex = malloc(sizeof(Texture));
-        load_texture(anim_tex,"../assets/boy_11.png");
-        sat_data = read_collada_maya(str(&global_platform.permanent_storage,"../assets/boy_maya_raw.dae"));
+        load_texture(anim_tex,"../assets/red.png");
+        sat_data = read_collada_maya(str(&global_platform.permanent_storage,"../assets/boy_remaster.dae"));
         animated_sat = init_animated_model(anim_tex, sat_data.root,&sat_data);
         shader_load(&anim_shader,"../assets/shaders/animated3d.vert", "../assets/shaders/animated3d.frag");
-        animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,"../assets/boy_maya_raw.dae"));
+        animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,"../assets/boy_remaster.dae"));
         animator = (Animator){animated_sat, &animation_to_play, 1.05f};
     }
+    background_color = v4(0.4,0.7,0.7,1.f);
 }
 
 
@@ -84,10 +85,13 @@ static void
 render(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(background_color.x, background_color.y, background_color.z,background_color.w);
-    //render_skybox(&skybox);
+    render_skybox(&skybox);
 
     update_animator(&animator);
+    load_texture(animator.model.diff_tex,"../assets/boy_10.jpg");
     render_animated_model(&animator.model, &anim_shader, proj, view);
+    //load_texture(animator.model.diff_tex,"../assets/red.png");
+    //render_animated_model_static(&animator.model, &anim_shader, proj, view);
 
     //render_model_textured_basic(&m,&proj, &view);
     //render_quad_mvp(&q, mul_mat4(proj,view));

@@ -12,6 +12,7 @@ layout(location = 4) in vec3 weights;
 out vec2 f_tex_coords;
 out vec3 f_normal;
 
+out vec4 color_vert;
 uniform mat4 joint_transforms[MAX_JOINTS];
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
@@ -35,7 +36,8 @@ void main(){
 	//total_local_pos = vec4(position, 1.0);
 	//total_normal = vec4(normal,1.0);
 	gl_Position = projection_matrix * view_matrix * total_local_pos;
-	f_normal = total_normal.xyz;
+	f_normal = normalize(total_normal.xyz);
 	f_tex_coords = tex_coords;
+	color_vert = vec4((joint_ids[0])*2 / 19.0,0.0,0.0,1.0);
 }
 

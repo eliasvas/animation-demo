@@ -378,6 +378,20 @@ typedef union ivec3
     i32 elements[3];
 }ivec3;
 
+typedef union ivec2
+{
+    struct
+    {
+        i32 x,y;
+    };
+    struct
+    {
+        i32 r,g;
+    };
+    i32 elements[2];
+}ivec2;
+
+
 INLINE b32 equals_ivec3(ivec3 l, ivec3 r)
 {
     i32 res = ((l.x == r.x) && (l.y == r.y) && (l.z == r.z));
@@ -648,6 +662,7 @@ INLINE vec3 blender_to_opengl_vec3(vec3 v)
     return v3(v.x, -v.z, v.y);
 }
 
+
 INLINE vec4 add_vec4(vec4 l, vec4 r)
 {
     vec4 res;
@@ -801,7 +816,24 @@ INLINE mat4 mul_mat4f(mat4 m, f32 s)
     }
     return res;
 }
+INLINE vec4 mul_mat4v(mat4 mat, vec4 vec)
+{
+    vec4 res;
 
+    i32 cols, rows;
+    for(rows = 0; rows < 4; ++rows)
+    {
+        f32 s = 0;
+        for(cols = 0; cols < 4; ++cols)
+        {
+            s += mat.elements[cols][rows] * vec.elements[cols];
+        }
+
+        res.elements[rows] = s;
+    }
+
+    return (res);
+}
 
 #ifdef TOOLS_SSE
 INLINE __m128 linear_combine_sse(__m128 l, mat4 r)
@@ -856,6 +888,7 @@ INLINE mat4 sub_mat4(mat4 l, mat4 r)
     return res;
 }
 
+//r is done first and then l
 INLINE mat4 mul_mat4(mat4 l, mat4 r)
 {
     mat4 res;
@@ -1164,6 +1197,20 @@ blender_to_opengl_mat4(mat4 mat)
    mat = negate_row_mat4(mat, 3);
    return mat;
 }
+INLINE mat4
+blender_to_opengl(mat4 mat)
+{
+   return mat;
+}
+
+
+
+INLINE mat4
+maya_to_opengl(mat4 mat)
+{
+    return mat;
+}
+
 
 //some operator overloading
 #ifdef __cplusplus
@@ -2336,40 +2383,6 @@ static void *buf__grow(const void *buf, u32 new_len, u32 element_size)
         buf_free(arr);
 }
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//SHOULDNT be here just a dependency issue
-typedef struct Joint Joint;
-
-struct Joint
-{
-    u32 index;
-    String name;
-    String sid;
-    //std::vector<Joint> children;
-    Joint *children;
-    u32 num_of_children;
-    Joint *parent;
-    u32 parent_id;
-    mat4 animated_transform; //joint transform
-    mat4 local_bind_transform;
-    mat4 inv_bind_transform;
-};
-
-
 typedef struct Vertex
 {
    vec3 position; 
@@ -2386,95 +2399,18 @@ static Vertex vert(vec3 p, vec3 n, vec2 t)
     return res;
 }
 
-typedef struct AnimatedVertex
-{
-    vec3 position;
-    vec3 normal;
-    vec2 tex_coord;
-    ivec3 joint_ids;
-    vec3 weights;
-}AnimatedVertex;
 
-typedef struct MeshData{
-    vec3 *positions; 
-    vec3 *normals; 
-    vec2 *tex_coords; 
-    Vertex *verts; //just for rendering
-    i32 vertex_count;
-    i32 *joint_ids; 
-    f32 *weights; 
-    u32 size;
 
-    mat4 *transforms;
-    i32 transforms_count;
-    mat4 bind_shape_matrix;
 
-    Joint root;
-    AnimatedVertex *vertices;
 
-    Joint *joints;
-    u32 joint_count;
 
-} MeshData;
 
-static Joint 
-joint_sid(u32 index, String name,String sid, mat4 local_bind_transform)
-{
-    Joint j;
-    j.index = index;
-    j.name = name;
-    
-    j.sid = sid;
-    j.local_bind_transform = local_bind_transform;
-    //this could just be a size in j.children 
-    j.num_of_children = 0;
-    //j.children = NULL;
-    //j.children = (Joint*)malloc(sizeof(Joint) * 10);
-    j.inv_bind_transform = m4d(1.f);
-    j.animated_transform = m4d(1.f);
-    
-    return j;
-}
 
-static Joint 
-joint(u32 index, String name, mat4 local_bind_transform)
-{
-    Joint j;
-    
-    j.index = index;
-    j.name = name;
-    j.local_bind_transform = local_bind_transform;
-    //j.inv_bind_transform = {0};
-    //j.animated_transform = {0};
-    
-    return j;
-}
 
-//represents the position and rotation of a joint in an animation frame (wrt parent)
-typedef struct JointTransform
-{
-    vec3 position;
-    Quaternion rotation;
-}JointTransform;
-typedef struct JointKeyFrame
-{
-    f32 timestamp;
-    u32 joint_index;
-    JointTransform transform;
-}JointKeyFrame;
 
-typedef struct JointAnimation
-{
-    JointKeyFrame *keyframes;
-    u32 keyframe_count; 
-}JointAnimation;
 
-typedef struct Animation
-{
-    JointAnimation *joint_animations;
-    u32 joint_anims_count;
-    f32 length; //max timestamp?
-}Animation;
+
+
 
 
 #ifdef __cplusplus

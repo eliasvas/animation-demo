@@ -209,7 +209,7 @@ read_collada_maya(String filepath)
         i32 res = fscanf(file, "%s", line);
         if (res == EOF)return data; //we reached the end of the file
 
-        if (strstr(line, "boyController-Matrices") || strstr(line, "bind_poses"))
+        if (strstr(line, "ProxyController-Matrices") || strstr(line, "boyController-Matrices") || strstr(line, "bind_poses"))
         {
             fscanf(file, "%s %s %s", garbage,garbage, count);
             //count the number of tex_coords
@@ -226,6 +226,7 @@ read_collada_maya(String filepath)
 
                 //NOTE: we transpose because the matrices are given in row major order!!
                 mat = transpose_mat4(mat);
+                //mat = maya_to_opengl(mat);
                 transforms[i] = mat;
             }
             break;
@@ -428,6 +429,7 @@ read_collada_maya(String filepath)
                 //read the local bind matrix
                 fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &mat.raw[0],&mat.raw[1],&mat.raw[2],&mat.raw[3],&mat.raw[4],&mat.raw[5],&mat.raw[6],&mat.raw[7],&mat.raw[8],&mat.raw[9],&mat.raw[10],&mat.raw[11],&mat.raw[12],&mat.raw[13],&mat.raw[14],&mat.raw[15]);
                 mat = transpose_mat4(mat);
+                //mat = maya_to_opengl(mat);
                // mat4 local_bind_transform = mat;
                 mat4 local_bind_transform = m4d(1.f);
                 local_bind_transform = mat;
@@ -475,6 +477,7 @@ read_collada_maya(String filepath)
             //read the local bind matrix
             fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &mat.raw[0],&mat.raw[1],&mat.raw[2],&mat.raw[3],&mat.raw[4],&mat.raw[5],&mat.raw[6],&mat.raw[7],&mat.raw[8],&mat.raw[9],&mat.raw[10],&mat.raw[11],&mat.raw[12],&mat.raw[13],&mat.raw[14],&mat.raw[15]);
             mat = transpose_mat4(mat);
+            //mat = maya_to_opengl(mat);
             mat4 local_bind_transform = m4d(1.f);
             local_bind_transform = mat;
             Joint to_add = joint_sid(index, id, sid, local_bind_transform);
@@ -516,14 +519,11 @@ read_collada_maya(String filepath)
          {
                fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &mat.raw[0],&mat.raw[1],&mat.raw[2],&mat.raw[3],&mat.raw[4],&mat.raw[5],&mat.raw[6],&mat.raw[7],&mat.raw[8],&mat.raw[9],&mat.raw[10],&mat.raw[11],&mat.raw[12],&mat.raw[13],&mat.raw[14],&mat.raw[15]);
                mat = transpose_mat4(mat);
+               //mat = maya_to_opengl(mat);
                data.bind_shape_matrix = mat;
                break;
          }
     }
-
-    for (int i = 0; i< 44; ++i)
-        int a = i;
-
 
    return data;
 }
@@ -581,14 +581,24 @@ read_collada_animation(String filepath) {
 
 
 
-   rewind(file);
    //go until the start of the first animation
    while (TRUE)
    {
        i32 res = fscanf(file, "%s", line);
-       if (res == EOF)break;// we reached the end of the file
-       if (strcmp(line, "<animation>") == 0)
-           number_of_joint_animations++;
+       if (res == EOF)return anim;// we reached the end of the file
+ 
+       //count number of joint animations
+       if (strcmp(line, "<library_animations>") == 0)
+       {
+           //<animation id="ABC" name="ABC" <--skeleton data not needed?
+           fscanf(file, "%s %s %s", garbage, garbage, garbage);
+           while (res != EOF){
+               res = fscanf(file, "%s", line);
+               if (strcmp(line, "<animation") == 0)
+                   number_of_joint_animations++;
+           }
+           break;
+      }
    }
    anim.joint_animations = (JointAnimation*)arena_alloc(&global_platform.permanent_storage, sizeof(JointAnimation) * number_of_joint_animations);
    anim.joint_anims_count = number_of_joint_animations;
@@ -597,66 +607,50 @@ read_collada_animation(String filepath) {
 
 
 
+   i32 current_joint_animation = 0;
    
 
    //now lets starting reading the actual animation
    while (TRUE)
    {
        i32 res = fscanf(file, "%s", line);
-       if (res == EOF)
-           return anim;
-       if (strcmp(line, "<library_animations>") == 0)break;
+       if (res == EOF)return anim;// we reached the end of the file
+       if (strcmp(line, "<library_animations>") == 0)
+       {
+          //<animation id="ABC" name="ABC" <--skeleton data not needed?
+          fscanf(file, "%s %s %s", garbage, garbage, garbage);
+          break;
+       }
    }
-
-
 
    i32 joint_index = 0;
    i32 keyframe_count;
-   u32 current_joint_animation = 0;
    while (TRUE)
    {
        i32 res = fscanf(file, "%s", line);
-       if (res == EOF)
-           return anim;
+       if (res == EOF)return anim;// we reached the end of the file
        if (strcmp(line, "<animation") == 0)
        {
-           //fscanf(file, "%s %s %s %s %s %s",garbage, garbage,garbage, garbage, garbage, garbage);
-           fscanf(file, "%s %s", garbage, garbage);
+           fscanf(file, "%s %s %s %s %s %s %s",garbage, garbage,garbage, garbage, garbage, garbage, garbage);
            for (i32 i = joints_count-1; i >=0; --i) //bigbrain Bone Bone_01 .... Bone gets popped first..
            {
-               //check against joint sid's for the joint animations index!!
                if (strstr(garbage, joint_names[i].data) != NULL)
                {
                    joint_index = i;
                    break;
                }
+                   
            }
-           //eat <animation>
-           res = fscanf(file, "%s", garbage);
-           //read the timestamps
-           while (TRUE)
+           fscanf(file, "%s", count);
+           anim.joint_animations[current_joint_animation].keyframe_count = get_num_from_string(count);
+           keyframe_count = anim.joint_animations[current_joint_animation].keyframe_count;
+           anim.joint_animations[current_joint_animation].keyframes = (JointKeyFrame*)arena_alloc(&global_platform.permanent_storage,sizeof(JointKeyFrame) * keyframe_count);
+           for (u32 i = 0; i < keyframe_count; ++i)
            {
-               res = fscanf(file, "%s", line);
-               if (res == EOF)
-                   return anim;
-               if (strcmp(line, "<float_array") == 0)
-               {
-                   fscanf(file, "%s", garbage);
-                   fscanf(file, "%s", count);
-                   anim.joint_animations[current_joint_animation].keyframe_count = get_num_from_string(count);
-                   keyframe_count = anim.joint_animations[current_joint_animation].keyframe_count;
-                   anim.joint_animations[current_joint_animation].keyframes = (JointKeyFrame*)arena_alloc(&global_platform.permanent_storage,sizeof(JointKeyFrame) * keyframe_count);
-                    
-                   for (u32 i = 0; i < keyframe_count; ++i)
-                   {
-                       fscanf(file, " %f", &anim.joint_animations[current_joint_animation].keyframes[i].timestamp);
-                   }
-                   break;
-               }
-                
+                fscanf(file, "%f", &anim.joint_animations[current_joint_animation].keyframes[i].timestamp);
            }
            mat4 mat;
-           //now lets read the transforms (trans + rot) for each timestamp
+           //now lets read the matrices for each timestamp
            while (TRUE)
            {
                res = fscanf(file, "%s", line);
@@ -667,10 +661,12 @@ read_collada_animation(String filepath) {
                    {
                        fscanf(file, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &mat.raw[0],&mat.raw[1],&mat.raw[2],&mat.raw[3],&mat.raw[4],&mat.raw[5],&mat.raw[6],&mat.raw[7],&mat.raw[8],&mat.raw[9],&mat.raw[10],&mat.raw[11],&mat.raw[12],&mat.raw[13],&mat.raw[14],&mat.raw[15]);
                        mat = transpose_mat4(mat);
-                       JointTransform t = {v3(mat.elements[3][0],mat.elements[3][1],mat.elements[3][2]), mat4_to_quat(mat)};
+                       //JointTransform t = {v3(mat.elements[3][0],mat.elements[3][1],mat.elements[3][2]), mat4_to_quat(mat)};
+                       JointTransform t = {v3(mat.elements[3][0],mat.elements[3][1],mat.elements[3][2]), mat4_to_quat(mat), mat};
                        anim.joint_animations[current_joint_animation].keyframes[i].transform = t;
                        anim.joint_animations[current_joint_animation].keyframes[i].joint_index = joint_index;
-                       anim.length = anim.joint_animations[current_joint_animation].keyframes[keyframe_count - 1].timestamp;
+                       anim.length = max(anim.length, anim.joint_animations[current_joint_animation].keyframes[keyframe_count - 1].timestamp);
+                       anim.joint_animations[current_joint_animation].length= anim.joint_animations[current_joint_animation].keyframes[keyframe_count - 1].timestamp;
                    }
                    break;
                }
@@ -679,24 +675,8 @@ read_collada_animation(String filepath) {
        }
    }
 
-       
-   /*
-   for (u32 i = current_joint_animation + 1; i < anim.joint_anims_count;++i)
-        for (u32 j = 0; j < anim.joint_animation[current_joint_animation].keyframe_count;++j)
-            anim.joint_animations[i].keyframes[j].transform = m4d(1.f);
-   */
-
     return anim;
 }
-
-
-
-
-
-
-
-
-
 
 
 
