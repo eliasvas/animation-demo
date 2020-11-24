@@ -19,7 +19,6 @@ static MeshData
 read_collada_maya(String filepath)
 {
    MeshData data = {0}; 
-
    //read the goddamn data
    FILE* file = fopen(filepath.data, "r");
    if (file == NULL)
@@ -147,8 +146,8 @@ read_collada_maya(String filepath)
             i32 vec[3];
             for (i32 i = 0; i < data.vertex_count; ++i)
             {
-                fscanf(file, "%i %i %i", &vec[0], &vec[1], &vec[2]);
-                triangles[i] = (ivec3){vec[0], vec[1], vec[2]}; 
+                fscanf(file, "%i %i", &vec[0], &vec[2]);
+                triangles[i] = (ivec3){vec[0], 3, vec[2]}; 
                 //if there is an extra component (color)
                 //fscanf(file, "%i", garbage);
             }
@@ -158,7 +157,7 @@ read_collada_maya(String filepath)
 
     for (u32 i = 0; i < data.vertex_count; ++i)
     {
-        data.verts[i] = vert(data.positions[triangles[i].x], data.normals[triangles[i].y], data.tex_coords[triangles[i].z]);
+        data.verts[i] = vert(data.positions[triangles[i].x], (vec3){0.f,1.f,0.f}, data.tex_coords[triangles[i].z]);
         skinning_index[i] = triangles[i].x;
     }
     rewind(file);
@@ -198,7 +197,7 @@ read_collada_maya(String filepath)
         }
    }
    data.joint_count = joints_count;
-   data.joints = (Joint *)malloc(sizeof(Joint) * data.joint_count);
+   data.joints = (Joint *)malloc(sizeof(Joint) * data.joint_count*2);
     rewind(file);
 
    //now lets read the inv bind transforms
@@ -209,7 +208,7 @@ read_collada_maya(String filepath)
         i32 res = fscanf(file, "%s", line);
         if (res == EOF)return data; //we reached the end of the file
 
-        if (strstr(line, "ProxyController-Matrices") || strstr(line, "boyController-Matrices") || strstr(line, "bind_poses"))
+        if (strstr(line, "-Matrices") || strstr(line, "ProxyController-Matrices") || strstr(line, "boyController-Matrices") || strstr(line, "bind_poses"))
         {
             fscanf(file, "%s %s %s", garbage,garbage, count);
             //count the number of tex_coords
@@ -391,7 +390,6 @@ read_collada_maya(String filepath)
    //not been closed (by </node>)
   //Joint *root = arena_alloc(&global_platform.permanent_storage, sizeof(Joint));
   
-   Joint *root = arena_alloc(&global_platform.permanent_storage, sizeof(Joint));
    u32 nodes_open = 0;
    u32 fake_nodes_open = 0;
    mat4 mat;
@@ -401,9 +399,15 @@ read_collada_maya(String filepath)
         i32 res = fscanf(file, "%s", line);
         if (res == EOF)return data;
         
-        if (strcmp(line, "<library_visual_scenes>") == 0)break;
+        if (strcmp(line, "<library_visual_scenes>") == 0)
+        {
+            fscanf(file, "%s %s %s %s",garbage, garbage, garbage, garbage);
+            break;
+        }
    }
+
    //we see whether our <node is the root (by strcmp!)
+   i32 root_index;
    while (TRUE)
    {
         i32 res = fscanf(file, "%s", line);
@@ -413,6 +417,7 @@ read_collada_maya(String filepath)
         {
             fscanf(file, "%s", line);
             String name = substr(&global_platform.frame_storage, line, 6,str_size(line) -1); 
+            root_name = name;
             //read root data
             if (strcmp(name.data, root_name.data) == 0)
             {
@@ -435,20 +440,22 @@ read_collada_maya(String filepath)
                 local_bind_transform = mat;
 
                 //local_bind_transform = transforms[index];
-                data.joints[0] = joint_sid(index, id, sid, local_bind_transform);
-                data.joints[0].inv_bind_transform = transforms[index];
-                data.joints[0].parent_id = 0;
+                data.joints[index] = joint_sid(index, id, sid, local_bind_transform);
+                data.joints[index].inv_bind_transform = transforms[index];
+                data.joints[index].animated_transform = m4d(1.f);
+                data.joints[index].parent_id = index;
+                root_index = index;
                 nodes_open++;
                 break;
             }
         }
    }
-   Joint *current = root;
-   u32 current_index = 0;
+   u32 current_index = data.joints[root_index].index;
    while (nodes_open > 0)
    {
         i32 res = fscanf(file, "%s", line);
-        if (res == EOF)return data;
+        if (res == EOF)
+            return data;
         
         if (strcmp(line, "<node") == 0)
         {
@@ -482,6 +489,7 @@ read_collada_maya(String filepath)
             local_bind_transform = mat;
             Joint to_add = joint_sid(index, id, sid, local_bind_transform);
             to_add.inv_bind_transform = transforms[index];
+            to_add.animated_transform = m4d(1.f); 
             //to_add.parent = current;
             to_add.parent_id = current_index;
             nodes_open++;
@@ -591,11 +599,14 @@ read_collada_animation(String filepath) {
        if (strcmp(line, "<library_animations>") == 0)
        {
            //<animation id="ABC" name="ABC" <--skeleton data not needed?
-           fscanf(file, "%s %s %s", garbage, garbage, garbage);
+           //fscanf(file, "%s %s %s", garbage, garbage, garbage);
            while (res != EOF){
                res = fscanf(file, "%s", line);
                if (strcmp(line, "<animation") == 0)
+               {
                    number_of_joint_animations++;
+                   fscanf(file, "%s %s %s %s", garbage,garbage, garbage, garbage);
+               }
            }
            break;
       }
@@ -618,14 +629,13 @@ read_collada_animation(String filepath) {
        if (strcmp(line, "<library_animations>") == 0)
        {
           //<animation id="ABC" name="ABC" <--skeleton data not needed?
-          fscanf(file, "%s %s %s", garbage, garbage, garbage);
           break;
        }
    }
 
    i32 joint_index = 0;
    i32 keyframe_count;
-   while (TRUE)
+   while (current_joint_animation < number_of_joint_animations)
    {
        i32 res = fscanf(file, "%s", line);
        if (res == EOF)return anim;// we reached the end of the file

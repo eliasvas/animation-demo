@@ -52,8 +52,8 @@ init(void)
     }
     m.position = v3(0,0,-2);
     init_text(&bmf, "../assets/BMF.png");
-    char *skybox_faces[6] = {"../assets/nebula/neb_rt.tga", "../assets/nebula/neb_lf.tga", "../assets/nebula/neb_up.tga",
-        "../assets/nebula/neb_dn.tga", "../assets/nebula/neb_bk.tga", "../assets/nebula/neb_ft.tga" };
+    char *skybox_faces[6] = {"../assets/env/maplenight_rt.tga", "../assets/env/maplenight_lf.tga", "../assets/env/maplenight_dn.tga",
+        "../assets/env/maplenight_up.tga", "../assets/env/maplenight_bk.tga", "../assets/env/maplenight_ft.tga" };
     init_skybox(&skybox, skybox_faces);
 
  
@@ -61,11 +61,11 @@ init(void)
     {
         //BLYYEHEHEHEH delete dis shiet luuul
         Texture *anim_tex = malloc(sizeof(Texture));
-        load_texture(anim_tex,"../assets/red.png");
-        sat_data = read_collada_maya(str(&global_platform.permanent_storage,"../assets/boy_remaster.dae"));
-        animated_sat = init_animated_model(anim_tex, sat_data.root,&sat_data);
+        load_texture(anim_tex,"../assets/derek.png");
         shader_load(&anim_shader,"../assets/shaders/animated3d.vert", "../assets/shaders/animated3d.frag");
-        animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,"../assets/boy_remaster.dae"));
+        sat_data = read_collada_maya(str(&global_platform.permanent_storage,"../assets/idle.dae"));
+        animated_sat = init_animated_model(anim_tex, sat_data.root,&sat_data);
+        animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,"../assets/idle.dae"));
         animator = (Animator){animated_sat, &animation_to_play, 1.05f};
     }
     background_color = v4(0.4,0.7,0.7,1.f);
@@ -88,10 +88,7 @@ render(void) {
     render_skybox(&skybox);
 
     update_animator(&animator);
-    load_texture(animator.model.diff_tex,"../assets/boy_10.jpg");
     render_animated_model(&animator.model, &anim_shader, proj, view);
-    //load_texture(animator.model.diff_tex,"../assets/red.png");
-    //render_animated_model_static(&animator.model, &anim_shader, proj, view);
 
     //render_model_textured_basic(&m,&proj, &view);
     //render_quad_mvp(&q, mul_mat4(proj,view));

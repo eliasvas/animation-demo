@@ -18,25 +18,6 @@ struct Joint
     mat4 local_bind_transform;
     mat4 inv_bind_transform;
 };
-
-/*
-typedef struct Vertex
-{
-   vec3 position; 
-   vec3 normal;
-   vec2 tex_coord;
-}Vertex;
-
-static Vertex vert(vec3 p, vec3 n, vec2 t)
-{
-    Vertex res;
-    res.position = p;
-    res.normal = n;
-    res.tex_coord = t;
-    return res;
-}
-*/
-
 typedef struct AnimatedVertex
 {
     vec3 position;
@@ -108,6 +89,7 @@ typedef struct JointTransform
     Quaternion rotation;
     mat4 transform; //this is not mandatory
 }JointTransform;
+
 typedef struct JointKeyFrame
 {
     f32 timestamp;
@@ -144,6 +126,7 @@ typedef struct AnimatedModel
     u32 joint_count;
     Joint *joints;
     mat4 bind_shape_matrix;
+    u32 vertices_count;
     
 }AnimatedModel;
 
@@ -196,8 +179,9 @@ increase_animation_time(Animator* anim)
 static mat4
 concat_local_transforms(Joint *joints, mat4 *local_transforms, u32 index)
 {
-    if (index == 0)
-        return local_transforms[0];
+    //root has parent id == its index
+    if (index == joints[index].parent_id)
+        return local_transforms[index];
     return mul_mat4(concat_local_transforms(joints, local_transforms, joints[index].parent_id), local_transforms[index]); 
 }
 
@@ -294,8 +278,8 @@ update_animator(Animator* animator)
     increase_animation_time(animator);
     //this is the array holding the animated local bind transforms for each joint,
     //if there is no animation in a certain joint its simply m4d(1.f)
-    mat4 *local_animated_transforms= (mat4*)arena_alloc(&global_platform.frame_storage, sizeof(mat4) *44);
-    for (i32 i = 0; i < 44; ++i)
+    mat4 *local_animated_transforms= (mat4*)arena_alloc(&global_platform.frame_storage, sizeof(mat4) *animator->model.joint_count);
+    for (i32 i = 0; i < animator->model.joint_count; ++i)
     {
         local_animated_transforms[i] = m4d(1.f);
     }
@@ -310,10 +294,10 @@ update_animator(Animator* animator)
     }
 
     //now we recursively apply the pose to get the animated bind(wrt world) transform
-    for (u32 i = 0; i < 44;++i)
+    for (u32 i = 0; i < animator->model.joint_count;++i)
         calc_animated_transform(animator, animator->model.joints, local_animated_transforms, animator->model.joints[i].index);
 
-    for (u32 i = 0; i < 44; ++i)
+    for (u32 i = 0; i < animator->model.joint_count; ++i)
         animator->model.joints[i].animated_transform = mul_mat4(animator->model.joints[i].animated_transform, animator->model.bind_shape_matrix);
 
 }
@@ -388,7 +372,7 @@ render_animated_model(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
         //@memleak
         char *str = "joint_transforms[xx]";
 
-        for (i32 i = 10; i < 44; ++i)
+        for (i32 i = 10; i < model->joint_count; ++i)
         {
             str[17] = '0' + (i/10);
             str[18] = '0' + (i -(((int)(i/10)) * 10));
@@ -397,13 +381,13 @@ render_animated_model(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
     }
 #endif
 
-    for (u32 i = 0; i < 44; ++i)
+    for (u32 i = 0; i < model->joint_count; ++i)
         set_joint_transform_uniforms(model,s, &model->joints[i]);
     setMat4fv(s, "view_matrix", (GLfloat*)view.elements);
     glUniform3f(glGetUniformLocation(s->ID, "light_direction"), 0.43,0.34,0.f); 
 
     glBindVertexArray(model->vao);
-    glDrawArrays(GL_TRIANGLES,0, 20000);
+    glDrawArrays(GL_TRIANGLES,0, model->vertices_count);
     //glDrawArrays(GL_LINES,0, 20000);
     glBindVertexArray(0);
     
@@ -421,6 +405,7 @@ init_animated_model(Texture* diff, Joint root,MeshData* data)
     model.joint_count = data->joint_count;
     model.joints = data->joints;
     model.bind_shape_matrix = data->bind_shape_matrix;
+    model.vertices_count = data->vertex_count;
     //calc_inv_bind_transform(&model.root,m4d(1.f));
     
     //not sure about this one -- let's figure out the parser first
@@ -455,7 +440,7 @@ render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 vi
         //@memleak
         char *str = "joint_transforms[xx]";
 
-        for (i32 i = 10; i < 44; ++i)
+        for (i32 i = 10; i < model->joint_count; ++i)
         {
             str[17] = '0' + (i/10);
             str[18] = '0' + (i -(((int)(i/10)) * 10));
@@ -463,14 +448,15 @@ render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 vi
         }
     }
 #endif
-
+    for (u32 i = 0; i < model->joint_count; ++i) 
+        set_joint_transform_uniforms(model,s, &model->joints[i]);
     setMat4fv(s, "view_matrix", (GLfloat*)view.elements);
     glUniform3f(glGetUniformLocation(s->ID, "light_direction"), 0.43,0.34,0.f); 
     
     
     glBindVertexArray(model->vao);
-    glDrawArrays(GL_TRIANGLES,0, 20000);
-    //glDrawArrays(GL_LINES,0, 20000);
+    glDrawArrays(GL_TRIANGLES,0, model->vertices_count);
+    //glDrawArrays(GL_LINES,0, model->vertices_count);
     glBindVertexArray(0);
     
 }
