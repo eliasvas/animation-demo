@@ -343,6 +343,53 @@ create_animated_model_vao(MeshData* data)
     
     return vao;
 }
+static void 
+render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
+{
+    use_shader(s);
+    
+    setMat4fv(s, "projection_matrix", (GLfloat*)proj.elements);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D,model->diff_tex->id);
+    setInt(s, "diffuse_map", 1); //we should really make the texture manager global or something(per Scene?)... sigh
+    //for(i32 i = 0; i < model->joint_count; ++i)
+    //to start things off, everything is identity!
+    view = mul_mat4(view, translate_mat4(v3(0,10,0)));
+    view = mul_mat4(view, quat_to_mat4(quat_from_angle(v3((int)view.raw[13] % 2,view.raw[14],0), (PI/2) * global_platform.current_time)));
+#if 1
+    {
+        mat4 identity = m4d(1.f);
+        setMat4fv(s, "joint_transforms[0]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[1]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[2]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[3]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[4]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[5]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[6]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[7]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[8]", (GLfloat*)identity.elements);
+        setMat4fv(s, "joint_transforms[9]", (GLfloat*)identity.elements);
+        //@memleak
+        char *str = "joint_transforms[xx]";
+
+        for (i32 i = 10; i < model->joint_count; ++i)
+        {
+            str[17] = '0' + (i/10);
+            str[18] = '0' + (i -(((int)(i/10)) * 10));
+            setMat4fv(s, str, (GLfloat*)identity.elements);
+        }
+    }
+#endif
+    setMat4fv(s, "view_matrix", (GLfloat*)view.elements);
+    glUniform3f(glGetUniformLocation(s->ID, "light_direction"), 0.43,0.34,0.f); 
+
+    glBindVertexArray(model->vao);
+    glDrawArrays(GL_TRIANGLES,0, model->vertices_count);
+    //glDrawArrays(GL_LINES,0, 20000);
+    glBindVertexArray(0);
+    
+}
+
 
 //this is so bad
 static void 
@@ -391,6 +438,7 @@ render_animated_model(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
     //glDrawArrays(GL_LINES,0, 20000);
     glBindVertexArray(0);
     
+    render_animated_model_static(model,s,proj,view);
 }
 
 static AnimatedModel
@@ -413,53 +461,5 @@ init_animated_model(Texture* diff, Joint root,MeshData* data)
     //initialize_joint_pos_array(&model.root,data->transforms);
     return model;
 }
-static void 
-render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
-{
-    use_shader(s);
-    
-    setMat4fv(s, "projection_matrix", (GLfloat*)proj.elements);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D,model->diff_tex->id);
-    setInt(s, "diffuse_map", 1); //we should really make the texture manager global or something(per Scene?)... sigh
-    //for(i32 i = 0; i < model->joint_count; ++i)
-    //to start things off, everything is identity!
-#if 1
-    {
-        mat4 identity = m4d(1.f);
-        setMat4fv(s, "joint_transforms[0]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[1]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[2]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[3]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[4]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[5]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[6]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[7]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[8]", (GLfloat*)identity.elements);
-        setMat4fv(s, "joint_transforms[9]", (GLfloat*)identity.elements);
-        //@memleak
-        char *str = "joint_transforms[xx]";
-
-        for (i32 i = 10; i < model->joint_count; ++i)
-        {
-            str[17] = '0' + (i/10);
-            str[18] = '0' + (i -(((int)(i/10)) * 10));
-            setMat4fv(s, str, (GLfloat*)identity.elements);
-        }
-    }
-#endif
-    for (u32 i = 0; i < model->joint_count; ++i) 
-        set_joint_transform_uniforms(model,s, &model->joints[i]);
-    setMat4fv(s, "view_matrix", (GLfloat*)view.elements);
-    glUniform3f(glGetUniformLocation(s->ID, "light_direction"), 0.43,0.34,0.f); 
-    
-    
-    glBindVertexArray(model->vao);
-    glDrawArrays(GL_TRIANGLES,0, model->vertices_count);
-    //glDrawArrays(GL_LINES,0, model->vertices_count);
-    glBindVertexArray(0);
-    
-}
-
 #endif
 

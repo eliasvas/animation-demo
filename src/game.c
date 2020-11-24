@@ -88,7 +88,22 @@ render(void) {
     render_skybox(&skybox);
 
     update_animator(&animator);
+    view = mul_mat4(view, translate_mat4(v3(-14,0,0)));
     render_animated_model(&animator.model, &anim_shader, proj, view);
+    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
+    render_animated_model(&animator.model, &anim_shader, proj, view);
+    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
+    render_animated_model(&animator.model, &anim_shader, proj, view);
+    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
+    render_animated_model(&animator.model, &anim_shader, proj, view);
+    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
+    render_animated_model(&animator.model, &anim_shader, proj, view);
+    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
+    render_animated_model(&animator.model, &anim_shader, proj, view);
+    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
+    render_animated_model(&animator.model, &anim_shader, proj, view);
+
+
 
     //render_model_textured_basic(&m,&proj, &view);
     //render_quad_mvp(&q, mul_mat4(proj,view));
