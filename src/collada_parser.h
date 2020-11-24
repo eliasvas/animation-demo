@@ -146,8 +146,8 @@ read_collada_maya(String filepath)
             i32 vec[3];
             for (i32 i = 0; i < data.vertex_count; ++i)
             {
-                fscanf(file, "%i %i", &vec[0], &vec[2]);
-                triangles[i] = (ivec3){vec[0], 3, vec[2]}; 
+                fscanf(file, "%i %i %i", &vec[0], &vec[1], &vec[2]);
+                triangles[i] = (ivec3){vec[0], vec[1], vec[2]}; 
                 //if there is an extra component (color)
                 //fscanf(file, "%i", garbage);
             }
@@ -157,7 +157,7 @@ read_collada_maya(String filepath)
 
     for (u32 i = 0; i < data.vertex_count; ++i)
     {
-        data.verts[i] = vert(data.positions[triangles[i].x], (vec3){0.f,1.f,0.f}, data.tex_coords[triangles[i].z]);
+        data.verts[i] = vert(data.positions[triangles[i].x], data.normals[triangles[i].y], data.tex_coords[triangles[i].z]);
         skinning_index[i] = triangles[i].x;
     }
     rewind(file);

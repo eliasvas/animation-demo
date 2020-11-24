@@ -61,11 +61,11 @@ init(void)
     {
         //BLYYEHEHEHEH delete dis shiet luuul
         Texture *anim_tex = malloc(sizeof(Texture));
-        load_texture(anim_tex,"../assets/derek.png");
+        load_texture(anim_tex,"../assets/redead.png");
         shader_load(&anim_shader,"../assets/shaders/animated3d.vert", "../assets/shaders/animated3d.frag");
-        sat_data = read_collada_maya(str(&global_platform.permanent_storage,"../assets/idle.dae"));
+        sat_data = read_collada_maya(str(&global_platform.permanent_storage,"../assets/rumba-redead.dae"));
         animated_sat = init_animated_model(anim_tex, sat_data.root,&sat_data);
-        animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,"../assets/idle.dae"));
+        animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,"../assets/rumba-redead.dae"));
         animator = (Animator){animated_sat, &animation_to_play, 1.05f};
     }
     background_color = v4(0.4,0.7,0.7,1.f);
@@ -88,21 +88,9 @@ render(void) {
     render_skybox(&skybox);
 
     update_animator(&animator);
-    view = mul_mat4(view, translate_mat4(v3(-14,0,0)));
     render_animated_model(&animator.model, &anim_shader, proj, view);
-    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
-    render_animated_model(&animator.model, &anim_shader, proj, view);
-    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
-    render_animated_model(&animator.model, &anim_shader, proj, view);
-    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
-    render_animated_model(&animator.model, &anim_shader, proj, view);
-    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
-    render_animated_model(&animator.model, &anim_shader, proj, view);
-    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
-    render_animated_model(&animator.model, &anim_shader, proj, view);
-    view = mul_mat4(view, translate_mat4(v3(4,0,0)));
-    render_animated_model(&animator.model, &anim_shader, proj, view);
-
+    render_animated_model_static(&animator.model, &anim_shader, proj, view, v3(15,0,0), 1.f);
+    render_animated_model_static(&animator.model, &anim_shader, proj, view, v3(-15,0,0), -1.f);
 
 
     //render_model_textured_basic(&m,&proj, &view);

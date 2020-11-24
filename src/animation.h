@@ -344,7 +344,7 @@ create_animated_model_vao(MeshData* data)
     return vao;
 }
 static void 
-render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
+render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 view, vec3 translate, f32 y_dir)
 {
     use_shader(s);
     
@@ -354,8 +354,8 @@ render_animated_model_static(AnimatedModel* model, Shader* s, mat4 proj, mat4 vi
     setInt(s, "diffuse_map", 1); //we should really make the texture manager global or something(per Scene?)... sigh
     //for(i32 i = 0; i < model->joint_count; ++i)
     //to start things off, everything is identity!
-    view = mul_mat4(view, translate_mat4(v3(0,10,0)));
-    view = mul_mat4(view, quat_to_mat4(quat_from_angle(v3((int)view.raw[13] % 2,view.raw[14],0), (PI/2) * global_platform.current_time)));
+    view = mul_mat4(view, translate_mat4(translate));
+    view = mul_mat4(view, quat_to_mat4(quat_from_angle(v3(0,1 * y_dir,0), (PI/2) * global_platform.current_time)));
 #if 1
     {
         mat4 identity = m4d(1.f);
@@ -438,7 +438,6 @@ render_animated_model(AnimatedModel* model, Shader* s, mat4 proj, mat4 view)
     //glDrawArrays(GL_LINES,0, 20000);
     glBindVertexArray(0);
     
-    render_animated_model_static(model,s,proj,view);
 }
 
 static AnimatedModel
