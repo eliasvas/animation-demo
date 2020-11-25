@@ -51,6 +51,17 @@ static void
 render(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(background_color.x, background_color.y, background_color.z,background_color.w);
+    if (global_platform.key_pressed[KEY_Q])
+    {
+        animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
+            str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/rumba-redead.dae"));  
+    }
+    if (global_platform.key_pressed[KEY_E])
+    {
+        animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
+            str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/jazz-redead.dae"));  
+    }
+
     render_skybox(&skybox);
 
     update_animator(&animator);
@@ -60,5 +71,6 @@ render(void) {
 
     if (global_platform.key_down[KEY_TAB])
         print_debug_info(&bmf);
+
 }
 

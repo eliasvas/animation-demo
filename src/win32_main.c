@@ -76,6 +76,9 @@ Win32WindowProc(HWND hWnd, UINT message, WPARAM w_param, LPARAM l_param) {
            if (!global_platform.key_down[key_input])
            {
                ++global_platform.key_pressed[key_input];
+           }else
+           {
+               global_platform.key_pressed[key_input] = 0;
            }
            ++global_platform.key_down[key_input];
            global_platform.last_key = (i32)key_input;
