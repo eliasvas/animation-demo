@@ -5,9 +5,9 @@
 #include "shader.h"
 #include "texture.h"
 
-typedef struct Joint Joint;
+static Shader anim_shader;
 
-struct Joint
+typedef struct Joint
 {
     u32 index;
     String name;
@@ -17,7 +17,7 @@ struct Joint
     mat4 animated_transform; //joint transform
     mat4 local_bind_transform;
     mat4 inv_bind_transform;
-};
+}Joint;
 typedef struct AnimatedVertex
 {
     vec3 position;

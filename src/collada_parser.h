@@ -692,6 +692,24 @@ read_collada_animation(String filepath) {
 
 
 
+static Animator
+init_animator(String diffuse_texture, String collada_model, String collada_animation) 
+{
+        Animator animator;
+        Texture *anim_tex = malloc(sizeof(Texture));
+        load_texture(anim_tex,diffuse_texture.data);
+        //only initialize if not already initialized!
+        if (&anim_shader != NULL)
+            shader_load(&anim_shader,"../assets/shaders/animated3d.vert", "../assets/shaders/animated3d.frag");
+        MeshData dae_data = read_collada_maya(str(&global_platform.permanent_storage,collada_model.data));
+        AnimatedModel animated_model = init_animated_model(anim_tex, dae_data.root,&dae_data);
+        Animation animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,collada_animation.data));
+        Animation *atp = arena_alloc(&global_platform.permanent_storage, sizeof(Animation));
+        *atp = animation_to_play;
+        animator = (Animator){animated_model, atp, 1.05f};
+        return animator;
+}
+
 
 
 #endif
