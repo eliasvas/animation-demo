@@ -533,6 +533,7 @@ read_collada_maya(String filepath)
          }
     }
 
+   fclose(file);
    return data;
 }
 
@@ -638,7 +639,11 @@ read_collada_animation(String filepath) {
    while (current_joint_animation < number_of_joint_animations)
    {
        i32 res = fscanf(file, "%s", line);
-       if (res == EOF)return anim;// we reached the end of the file
+       if (res == EOF)
+       {
+           fclose(file);
+           return anim;// we reached the end of the file
+       }
        if (strcmp(line, "<animation") == 0)
        {
            fscanf(file, "%s %s %s %s %s %s %s",garbage, garbage,garbage, garbage, garbage, garbage, garbage);
@@ -685,6 +690,7 @@ read_collada_animation(String filepath) {
        }
    }
 
+    fclose(file);
     return anim;
 }
 

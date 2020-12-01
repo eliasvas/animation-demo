@@ -132,8 +132,8 @@ typedef struct TransformManager
 
 
 //NOTE(ilias): Component Managers (these are used everywhere)
-static PositionManager position_manager;
-static TransformManager transform_manager;
+PositionManager position_manager;
+TransformManager transform_manager;
 
 
 #endif

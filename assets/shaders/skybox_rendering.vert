@@ -10,6 +10,6 @@ void main()
 {
 	mat4 view = mat4(mat3(uniform_view_matrix));
     TexCoords = aPos;
-	TexCoords.y = ( - TexCoords.y);
+	TexCoords.y = (-TexCoords.y);
     gl_Position = uniform_projection_matrix * view * vec4(aPos, 1.0);
 }  

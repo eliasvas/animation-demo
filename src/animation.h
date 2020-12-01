@@ -138,6 +138,9 @@ typedef struct Animator
     f32 animation_time;
 }Animator;
 
+//is this correct? sure hope so..
+typedef Animator AnimatorComponent;
+
 
 
 static JointTransform 

@@ -7,8 +7,8 @@
 #include "entity.h"
 #include "text.h"
 #include "collada_parser.h"
-//#include "animation.h"
 #include "skybox.h"
+#include "physics.h"
 
 static Quad q;
 static Camera cam;
@@ -18,6 +18,7 @@ static Skybox skybox;
 static mat4 view;
 static mat4 proj;
 static vec4 background_color;
+static i32 state;
 
 
 static Animator animator;
@@ -51,16 +52,34 @@ static void
 render(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(background_color.x, background_color.y, background_color.z,background_color.w);
-    if (global_platform.key_pressed[KEY_Q])
+    if (global_platform.key_pressed[KEY_DOWN] && state != 0)
     {
-        animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
-            str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/rumba-redead.dae"));  
+        *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/rumba-redead.dae"));
+        state = 0;
     }
-    if (global_platform.key_pressed[KEY_E])
+    if (global_platform.key_pressed[KEY_UP] && state != 1)
     {
-        animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
-            str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/jazz-redead.dae"));  
+        //animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
+            //str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/jazz-redead.dae"));  
+        *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/jazz-redead.dae"));
+        state = 1;
     }
+    if (global_platform.key_pressed[KEY_LEFT] && state != 2)
+    {
+        //animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
+            //str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/jazz-redead.dae"));  
+        *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/wave-left-redead.dae"));
+        state = 2;
+    }
+    if (global_platform.key_pressed[KEY_RIGHT] && state != 3)
+    {
+        //animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
+            //str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/jazz-redead.dae"));  
+        *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/block-right-redead.dae"));
+        state = 3;
+    }
+
+
 
     render_skybox(&skybox);
 
