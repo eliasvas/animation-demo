@@ -109,6 +109,7 @@ typedef struct Animation
     JointAnimation *joint_animations;
     u32 joint_anims_count;
     f32 length; //max timestamp?
+    f32 playback_rate;
 }Animation;
 
 
@@ -173,7 +174,8 @@ interpolate_joint_transforms(JointTransform l, JointTransform r, f32 time)
 static void 
 increase_animation_time(Animator* anim)
 {
-    anim->animation_time += global_platform.dt; //this should be the Δt from global platform but its bugged rn
+    assert(anim);
+    anim->animation_time += global_platform.dt * anim->anim->playback_rate; //this should be the Δt from global platform but its bugged rn
     if (anim->animation_time > anim->anim->length)
         anim->animation_time -= anim->anim->length;
 }

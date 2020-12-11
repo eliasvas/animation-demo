@@ -20,6 +20,17 @@ static mat4 proj;
 static vec4 background_color;
 static i32 state;
 
+//-----GAME------
+//-fear of the unknown
+//--there probably exists some malign entity
+//-based on exploration
+//--something desolate??
+//-NPC's can't be humans, must be something predictable
+//--maybe brainwashed humans or animals/robots
+//-hack and slash would be nice
+//--
+//-actions must matter someway
+//--
 
 static Animator animator;
 static void 

@@ -543,6 +543,8 @@ read_collada_maya(String filepath)
 static Animation 
 read_collada_animation(String filepath) {
    Animation anim;    
+   //by default all animations play at normal speed!
+   anim.playback_rate = 1.f;
    FILE* file = fopen(filepath.data, "r");
    if (file == NULL)
    {
