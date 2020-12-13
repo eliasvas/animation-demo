@@ -714,7 +714,8 @@ init_animator(String diffuse_texture, String collada_model, String collada_anima
         Animation animation_to_play = read_collada_animation(str(&global_platform.permanent_storage,collada_animation.data));
         Animation *atp = arena_alloc(&global_platform.permanent_storage, sizeof(Animation));
         *atp = animation_to_play;
-        animator = (Animator){animated_model, atp, 1.05f};
+        JointKeyFrame *prev_pose = arena_alloc(&global_platform.permanent_storage, sizeof(JointKeyFrame) * animated_model.joint_count);
+        animator = (Animator){animated_model, atp, 1.05f, prev_pose, 0.f, 1.f};
         return animator;
 }
 

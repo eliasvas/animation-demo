@@ -7,6 +7,8 @@
 
 static Shader anim_shader;
 
+//NOTE(ilias): lets implement frozen transitions!
+
 typedef struct Joint
 {
     u32 index;
@@ -108,7 +110,7 @@ typedef struct Animation
 {
     JointAnimation *joint_animations;
     u32 joint_anims_count;
-    f32 length; //max timestamp?
+    f32 length;
     f32 playback_rate;
 }Animation;
 
@@ -137,6 +139,10 @@ typedef struct Animator
     AnimatedModel model;
     Animation* anim;
     f32 animation_time;
+
+    JointKeyFrame *prev_pose;
+    f32 blend_percentage; //in [0,1], tells us how much of prev_pose we should blend
+    f32 blend_time; //time the (linear) blending should take place =1?
 }Animator;
 
 //is this correct? sure hope so..
@@ -178,6 +184,9 @@ increase_animation_time(Animator* anim)
     anim->animation_time += global_platform.dt * anim->anim->playback_rate; //this should be the Δt from global platform but its bugged rn
     if (anim->animation_time > anim->anim->length)
         anim->animation_time -= anim->anim->length;
+    //NOTE(ilias): this is in case playback rate is negative
+    if (anim->animation_time < 0.f)
+      anim->animation_time += anim->anim->length;
 }
 
 //mat4 animated_joint_transform = concat_local_transforms(joints, local_transforms, index); 
@@ -196,16 +205,9 @@ calc_animated_transform(Animator *animator, Joint *joints, mat4 *local_transform
 {
     //here we get the animated joint transform meaning the world pos of the joint in the animation
     mat4 animated_joint_transform = concat_local_transforms(joints, local_transforms, index); 
-    //mat4 animated_joint_transform = local_transforms[index]; 
-    //here we multiply by inv bind transform to get the world pos relative to the original bone transforms
     joints[index].animated_transform = mul_mat4(animated_joint_transform, joints[index].inv_bind_transform);
-    /*
-    if (index == 0)
-    {
-        joints[index].animated_transform = mul_mat4(joints[index].animated_transform, animator->model.bind_shape_matrix);
-    }
-    */
 }
+
 char joint_transforms[21] = "joint_transforms[00]";
 char joint_transforms_one[20] = "joint_transforms[0]";
 static void 
@@ -233,10 +235,6 @@ get_previous_and_next_keyframes(Animator* animator, i32 joint_animation_index)
     JointKeyFrame prev = all_frames[0];
     JointKeyFrame next = all_frames[0];
     f32 animation_time = animator->animation_time;
-    //if (animation_time > next.timestamp)
-    i32 integral = 1;
-    //animation_time = fmod(animation_time,animator->anim->joint_animations[joint_animation_index].length);
-    //animation_time = modf(animation_time, &integral); 
     for (i32 i = 1; i < animator->anim->joint_animations[joint_animation_index].keyframe_count; ++i)
     {
         next = all_frames[i];
@@ -281,14 +279,24 @@ update_animator(Animator* animator)
 {
     if (animator->anim == NULL)return;
     increase_animation_time(animator);
+    animator->blend_percentage -= (1.f/(animator->blend_time)) *global_platform.dt;
+    if (animator->blend_percentage < 0.f)
+      animator->blend_percentage = 0.f;
     //this is the array holding the animated local bind transforms for each joint,
     //if there is no animation in a certain joint its simply m4d(1.f)
-    mat4 *local_animated_transforms= (mat4*)arena_alloc(&global_platform.frame_storage, sizeof(mat4) *animator->model.joint_count);
+    mat4 *local_animated_transforms= (mat4*)arena_alloc(&global_platform.frame_storage, sizeof(mat4) * animator->model.joint_count);
     for (i32 i = 0; i < animator->model.joint_count; ++i)
     {
-        local_animated_transforms[i] = m4d(1.f);
+        local_animated_transforms[i] = m4d(1.f);//mul_mat4(translate_mat4((vec3){0,0,0}), quat_om_angle((vec3){0,1,0}, 0));
     }
 
+    //setting every prev joint pose to m4d(1.f)
+    for (u32 i = 0; i < animator->model.joint_count; ++i)
+    {
+        JointKeyFrame current_pose = calc_current_animation_pose(animator, i); 
+        if (animator->blend_percentage < 0.001f)
+          animator->prev_pose[current_pose.joint_index] = (JointKeyFrame){0};
+    }
     //we put the INTERPOLATED local(wrt parent) animated transforms in the array
     for (u32 i = 0; i < animator->anim->joint_anims_count; ++i)
     {
@@ -296,6 +304,13 @@ update_animator(Animator* animator)
         //JointKeyFrame current_pose = animator->anim->joint_animations[i].keyframes[((int)(global_platform.current_time * 24) % animator->anim->joint_animations[i].keyframe_count)];
         mat4 local_animated_transform = mul_mat4(translate_mat4(current_pose.transform.position), quat_to_mat4(current_pose.transform.rotation));
         local_animated_transforms[current_pose.joint_index] = local_animated_transform;
+        if (animator->blend_percentage > 0.001f)
+        {
+          current_pose = interpolate_poses(current_pose,animator->prev_pose[current_pose.joint_index], animator->blend_percentage);
+          mat4 local_animated_transform = mul_mat4(translate_mat4(current_pose.transform.position), quat_to_mat4(current_pose.transform.rotation));
+          local_animated_transforms[current_pose.joint_index] = local_animated_transform;
+        }else
+          animator->prev_pose[current_pose.joint_index] = current_pose;
     }
 
     //now we recursively apply the pose to get the animated bind(wrt world) transform
