@@ -3113,7 +3113,7 @@
   <library_controllers>
     <controller id="redeadFBXASC046pngController">
       <skin source="#redeadFBXASC046png-lib">
-        <bind_shape_matrix>1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000
+        <bind_shape_matrix> 1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000
 </bind_shape_matrix>
         <source id="redeadFBXASC046pngController-Joints">
           <Name_array id="redeadFBXASC046pngController-Joints-array" count="34">

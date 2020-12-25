@@ -33,8 +33,9 @@ init(void)
 
  
     animator = init_animator(str(&global_platform.frame_storage,"../assets/redead.png"), 
-            str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/rumba-redead.dae"));  
+            str(&global_platform.frame_storage,"../assets/rumba-redead.dae"), str(&global_platform.frame_storage,"../assets/jazz-redead.dae"));  
     background_color = v4(0.4,0.7,0.7,1.f);
+    state = 1;
 }
 
 
@@ -55,6 +56,7 @@ render(void) {
     {
         *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/rumba-redead.dae"));
         animator.blend_percentage = 1.f;
+        animator.blend_time = 0.2f;
         state = 0;
     }
     if (global_platform.key_pressed[KEY_UP] && state != 1)
@@ -62,18 +64,21 @@ render(void) {
         //JointKeyFrame *prev_pose = animator.prev_pose;
         *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/jazz-redead.dae"));
         animator.blend_percentage = 1.f;
+        animator.blend_time = 0.2f;
         state = 1;
     }
     if (global_platform.key_pressed[KEY_LEFT] && state != 2)
     {
         *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/wave-left-redead.dae"));
         animator.blend_percentage = 1.f;
+        animator.blend_time = 0.2f;
         state = 2;
     }
     if (global_platform.key_pressed[KEY_RIGHT] && state != 3)
     {
         *animator.anim = read_collada_animation(str(&global_platform.permanent_storage,"../assets/block-right-redead.dae"));
         animator.blend_percentage = 1.f;
+        animator.blend_time = 0.2f;
         state = 3;
     }
 

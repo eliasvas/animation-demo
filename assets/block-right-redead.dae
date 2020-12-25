@@ -3113,7 +3113,7 @@
   <library_controllers>
     <controller id="redeadFBXASC046pngController">
       <skin source="#redeadFBXASC046png-lib">
-        <bind_shape_matrix>1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000
+        <bind_shape_matrix> 1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 -0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000
 </bind_shape_matrix>
         <source id="redeadFBXASC046pngController-Joints">
           <Name_array id="redeadFBXASC046pngController-Joints-array" count="34">
@@ -3125,7 +3125,8 @@ mixamorig_LeftToeBase mixamorig_RightForeArm mixamorig_RightHand mixamorig_Right
 mixamorig_RightHandThumb2 mixamorig_RightHandThumb1 mixamorig_LeftForeArm mixamorig_LeftHand
 mixamorig_LeftHandIndex1 mixamorig_LeftHandThumb1 mixamorig_RightHandIndex2
 mixamorig_RightHandIndex3 mixamorig_RightHandThumb3 mixamorig_LeftHandIndex2
-mixamorig_LeftHandThumb2 mixamorig_LeftHandIndex3 mixamorig_LeftHandThumb3</Name_array>
+mixamorig_LeftHandThumb2 mixamorig_LeftHandIndex3 mixamorig_LeftHandThumb3 
+</Name_array>
           <technique_common>
             <accessor source="#redeadFBXASC046pngController-Joints-array" count="34">
               <param type="name"/>

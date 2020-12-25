@@ -475,7 +475,7 @@ read_collada_maya(String filepath)
                     break;
             //eat type="__", <matrix, sid ="matrix"
             fscanf(file, "%s",garbage);
-            if (!strstr(garbage, "type=\"JOINT\"")){
+            if (!strstr(garbage, "type=\"JOINT\"") || index >= joints_count){
                 fake_nodes_open++;
                 continue;
             }
@@ -649,9 +649,12 @@ read_collada_animation(String filepath) {
        if (strcmp(line, "<animation") == 0)
        {
            fscanf(file, "%s %s %s %s %s %s %s",garbage, garbage,garbage, garbage, garbage, garbage, garbage);
-           for (i32 i = joints_count-1; i >=0; --i) //bigbrain Bone Bone_01 .... Bone gets popped first..
+           char *str = garbage + 4;
+           char *end_of_name = strchr(str,'-');
+           i32 len = (int)end_of_name - (int)str;
+           for (i32 i =0; i <=joints_count; ++i) //bigbrain Bone Bone_01 .... Bone gets popped first..
            {
-               if (strstr(garbage, joint_names[i].data) != NULL)
+               if (strncmp(str, joint_names[i].data, max(joint_names[i].len, len)) == 0)
                {
                    joint_index = i;
                    break;
